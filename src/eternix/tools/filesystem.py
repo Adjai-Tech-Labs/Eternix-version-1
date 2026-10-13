@@ -3,20 +3,77 @@ import shutil
 from pathlib import Path
 from typing import Any
 
+from eternix.core.config import settings
 from eternix.core.models import Task, ToolDefinition, ToolResult, ToolSideEffect
 from eternix.core.task_store import TaskStore
 from eternix.tools.registry import tool_registry
 
 
-def _resolve_path(path: str, task: Task) -> Path:
-    base = Path.cwd()
-    if task.input_data.get("working_dir"):
-        base = Path(task.input_data["working_dir"])
-    return (base / path).resolve()
+class WorkspaceEscape(Exception):
+    """Raised when a requested path resolves outside the authorized workspace."""
+
+
+def _workspace_root(task_store: TaskStore | None) -> Path:
+    """Resolve the authoritative confinement root for file operations.
+
+    Prefers the active workspace registered by the user. Falls back to the
+    configured default workspace only when no active workspace is set, so a
+    fresh install still has a bounded root rather than the process CWD.
+    """
+    if task_store is not None:
+        active = task_store.get_active_workspace_path()
+        if active is not None:
+            return active
+    try:
+        return Path(settings.default_workspace).resolve()
+    except (OSError, ValueError):
+        return Path.cwd().resolve()
+
+
+def _confine(path_str: str, root: Path) -> Path:
+    """Canonicalize ``path_str`` and ensure it stays inside ``root``.
+
+    Symlinks are resolved before the containment check so a link cannot be
+    used to escape the workspace. Raises :class:`WorkspaceEscape` otherwise.
+    """
+    candidate = Path(path_str)
+    resolved = (candidate if candidate.is_absolute() else root / candidate).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise WorkspaceEscape(f"Path is outside the authorized workspace: {path_str}")
+    return resolved
+
+
+def _resolve_path(path: str, task: Task, task_store: TaskStore | None = None) -> Path:
+    """Resolve a tool path confined to the active workspace.
+
+    An explicit ``working_dir`` in the task input is honored only if it is
+    itself inside the workspace root; otherwise it is ignored. The final
+    path is always confined, so neither ``..`` traversal nor an absolute
+    path outside the workspace can escape.
+    """
+    root = _workspace_root(task_store)
+    working_dir = task.input_data.get("working_dir")
+    base = root
+    if working_dir:
+        try:
+            candidate_base = _confine(str(working_dir), root)
+            if candidate_base.is_dir():
+                base = candidate_base
+        except WorkspaceEscape:
+            base = root
+    raw = Path(path)
+    resolved = (raw if raw.is_absolute() else base / raw).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise WorkspaceEscape(f"Path is outside the authorized workspace: {path}")
+    return resolved
+
 
 
 async def fs_list_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", "."), task)
+    try:
+        path = _resolve_path(input_data.get("path", "."), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.list", task_id=task.id, success=False, error=str(e))
     if not path.exists():
         return ToolResult(
             tool_id="fs.list",
@@ -62,7 +119,10 @@ async def fs_list_handler(input_data: dict[str, Any], task: Task, task_store: Ta
 
 
 async def fs_read_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", ""), task)
+    try:
+        path = _resolve_path(input_data.get("path", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.read", task_id=task.id, success=False, error=str(e))
     if not path.exists() or not path.is_file():
         return ToolResult(
             tool_id="fs.read",
@@ -93,7 +153,10 @@ async def fs_read_handler(input_data: dict[str, Any], task: Task, task_store: Ta
 
 
 async def fs_write_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", ""), task)
+    try:
+        path = _resolve_path(input_data.get("path", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.write", task_id=task.id, success=False, error=str(e))
     content = input_data.get("content", "")
     encoding = input_data.get("encoding", "utf-8")
     create_dirs = input_data.get("create_dirs", True)
@@ -118,7 +181,10 @@ async def fs_write_handler(input_data: dict[str, Any], task: Task, task_store: T
 
 
 async def fs_mkdir_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", ""), task)
+    try:
+        path = _resolve_path(input_data.get("path", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.mkdir", task_id=task.id, success=False, error=str(e))
     try:
         path.mkdir(parents=True, exist_ok=True)
         return ToolResult(
@@ -137,8 +203,11 @@ async def fs_mkdir_handler(input_data: dict[str, Any], task: Task, task_store: T
 
 
 async def fs_copy_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    src = _resolve_path(input_data.get("src", ""), task)
-    dst = _resolve_path(input_data.get("dst", ""), task)
+    try:
+        src = _resolve_path(input_data.get("src", ""), task, task_store)
+        dst = _resolve_path(input_data.get("dst", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.copy", task_id=task.id, success=False, error=str(e))
     try:
         if src.is_dir():
             shutil.copytree(src, dst, dirs_exist_ok=True)
@@ -161,8 +230,11 @@ async def fs_copy_handler(input_data: dict[str, Any], task: Task, task_store: Ta
 
 
 async def fs_move_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    src = _resolve_path(input_data.get("src", ""), task)
-    dst = _resolve_path(input_data.get("dst", ""), task)
+    try:
+        src = _resolve_path(input_data.get("src", ""), task, task_store)
+        dst = _resolve_path(input_data.get("dst", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.move", task_id=task.id, success=False, error=str(e))
     try:
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.move(str(src), str(dst))
@@ -182,7 +254,10 @@ async def fs_move_handler(input_data: dict[str, Any], task: Task, task_store: Ta
 
 
 async def fs_delete_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", ""), task)
+    try:
+        path = _resolve_path(input_data.get("path", ""), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.delete", task_id=task.id, success=False, error=str(e))
     recursive = input_data.get("recursive", False)
     try:
         if path.is_dir():
@@ -208,7 +283,10 @@ async def fs_delete_handler(input_data: dict[str, Any], task: Task, task_store: 
 
 
 async def fs_search_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
-    path = _resolve_path(input_data.get("path", "."), task)
+    try:
+        path = _resolve_path(input_data.get("path", "."), task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="fs.search", task_id=task.id, success=False, error=str(e))
     pattern = input_data.get("pattern", "*")
     content_pattern = input_data.get("content_pattern")
     max_results = input_data.get("max_results", 100)

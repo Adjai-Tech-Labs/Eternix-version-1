@@ -402,17 +402,32 @@ async def intelligence_search(payload: dict[str, Any] | None = None):
 
 @app.get("/intelligence/index", dependencies=PROTECTED)
 async def intelligence_index_status():
-    return {"status": "idle"}
+    # There is no separate persistent code index; search operates directly
+    # on the workspace via the coding.search tool. Report this truthfully
+    # rather than pretending an index exists.
+    return {"indexed": False, "status": "not_indexed", "note": "Search runs live against the workspace; no separate index is maintained."}
 
 
 @app.post("/intelligence/index", dependencies=PROTECTED)
 async def intelligence_index(path: str = "."):
-    return {"status": "ok", "message": "indexed", "path": path}
+    # Honest capability report: code search is performed live (coding.search),
+    # so there is nothing to pre-index. Returning success here would falsely
+    # imply a background indexer that does not exist.
+    return {
+        "status": "not_supported",
+        "indexed": False,
+        "path": path,
+        "note": "No background indexer is implemented. Use POST /intelligence/search for live workspace search.",
+    }
 
 
 @app.get("/intelligence/status", dependencies=PROTECTED)
 async def intelligence_status():
-    return {"status": "idle"}
+    return {
+        "indexed": False,
+        "search_backend": "live",
+        "note": "Workspace search runs live via coding.search; no persistent index is maintained.",
+    }
 
 
 @app.post("/research/search", dependencies=PROTECTED)
@@ -432,7 +447,10 @@ async def research_search(payload: dict[str, Any] | None = None):
 
 @app.get("/research/history", dependencies=PROTECTED)
 async def research_history():
-    return []
+    # Research is executed on demand (POST /research/search) and is not
+    # persisted as a per-account history store. Report the absence of a
+    # stored history honestly instead of returning a misleading empty list.
+    return {"history": [], "persisted": False, "note": "Research results are not persisted; run POST /research/search to perform live research."}
 
 
 @app.post("/knowledge/search", dependencies=PROTECTED)
@@ -495,7 +513,29 @@ async def rename_conversation(conversation_id: str, request: dict[str, Any]):
 
 @app.get("/artifacts", dependencies=PROTECTED)
 async def list_artifacts(objective_id: str | None = None):
-    return []
+    # Artifacts are not stored as first-class records; task outputs live on
+    # each task. If an objective is supplied, surface its completed task
+    # outputs truthfully rather than returning a bare empty list.
+    if not task_store:
+        raise HTTPException(503, "Not initialized")
+    if objective_id:
+        try:
+            oid = UUID(objective_id)
+        except ValueError:
+            raise HTTPException(400, "Invalid UUID")
+        tasks = task_store.get_tasks_for_objective(oid)
+        return [
+            {
+                "task_id": str(t.id),
+                "type": "tool_output",
+                "tool_id": t.tool_id,
+                "status": t.status.value,
+                "data": t.output_data,
+            }
+            for t in tasks
+            if t.status.value == "completed" and t.output_data
+        ]
+    return {"artifacts": [], "note": "Pass ?objective_id=<id> to list task outputs for a completed objective."}
 
 
 @app.get("/system", dependencies=PROTECTED)

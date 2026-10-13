@@ -550,6 +550,22 @@ class TaskStore:
                 w.active = 1 if w.id == ws_id else 0
             return True
 
+    def get_active_workspace_path(self) -> Path | None:
+        """Return the resolved path of the active workspace, if any.
+
+        This is the authoritative confinement root for filesystem and
+        command tools. Tools must resolve and validate every path against
+        this root instead of the process working directory.
+        """
+        with self.session() as s:
+            ws = s.scalars(select(WorkspaceORM).where(WorkspaceORM.active == 1)).first()
+            if ws and ws.path:
+                try:
+                    return Path(ws.path).resolve()
+                except (OSError, ValueError):
+                    return None
+            return None
+
     def list_models(self) -> list[ModelInfo]:
         with self.session() as s:
             stmt = select(ModelInfoORM)

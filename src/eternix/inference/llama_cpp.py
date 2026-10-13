@@ -36,6 +36,23 @@ class InferenceBackend:
         self._server_process: asyncio.subprocess.Process | None = None
         self._server_url: str | None = None
 
+    def _runtime_env(self) -> dict[str, str]:
+        """Environment that lets the bundled binaries find their shared libs.
+
+        The llama.cpp shared libraries are shipped next to the executables in
+        ``llama_cpp_bin``. Prepending that directory to ``LD_LIBRARY_PATH``
+        makes the runtime relocatable instead of depending on a build-time
+        RUNPATH that points at the original build tree.
+        """
+        import os
+
+        env = dict(os.environ)
+        bin_dir = str(settings.llama_cpp_bin)
+        existing = env.get("LD_LIBRARY_PATH", "")
+        parts = [bin_dir] + ([existing] if existing else [])
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(parts)
+        return env
+
     async def discover_models(self) -> list[ModelInfo]:
         models = []
         model_dir = settings.model_dir
@@ -111,6 +128,7 @@ class InferenceBackend:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=self._runtime_env(),
             )
             stdout, _stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
 
@@ -262,6 +280,7 @@ class InferenceBackend:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                env=self._runtime_env(),
             )
             await asyncio.sleep(3)
             self._server_url = f"http://127.0.0.1:{port}"

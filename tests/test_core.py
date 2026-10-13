@@ -208,6 +208,12 @@ class TestTools:
 
     @pytest.mark.asyncio
     async def test_fs_write_and_read(self, task_store, registered_tools, tmp_path):
+        # Filesystem tools are confined to the active workspace. Register the
+        # temp directory as the active workspace so the write is authorized
+        # (the sandbox-escape boundary is covered by the E2E journey tests).
+        ws = task_store.create_workspace("test", str(tmp_path))
+        task_store.set_active_workspace(ws["id"])
+
         test_file = tmp_path / "test_write.txt"
         task = Task(
             id=uuid4(),
@@ -215,10 +221,11 @@ class TestTools:
             description="Test write",
             capability="filesystem",
             tool_id="fs.write",
-            input_data={"path": str(test_file), "content": "Hello World"},
+            input_data={"path": "test_write.txt", "content": "Hello World"},
         )
-        result = await execute_tool("fs.write", task, {"path": str(test_file), "content": "Hello World"}, task_store)
-        assert result.success
+        result = await execute_tool("fs.write", task, {"path": "test_write.txt", "content": "Hello World"}, task_store)
+        assert result.success, result.error
+        assert test_file.read_text() == "Hello World"
 
         task2 = Task(
             id=uuid4(),
@@ -226,11 +233,32 @@ class TestTools:
             description="Test read",
             capability="filesystem",
             tool_id="fs.read",
-            input_data={"path": str(test_file)},
+            input_data={"path": "test_write.txt"},
         )
-        result2 = await execute_tool("fs.read", task2, {"path": str(test_file)}, task_store)
+        result2 = await execute_tool("fs.read", task2, {"path": "test_write.txt"}, task_store)
         assert result2.success
         assert result2.output["content"] == "Hello World"
+
+    @pytest.mark.asyncio
+    async def test_fs_write_outside_workspace_is_refused(self, task_store, registered_tools, tmp_path):
+        """Regression (DEF-005): writes outside the workspace must be refused."""
+        ws = task_store.create_workspace("test", str(tmp_path / "ws"))
+        (tmp_path / "ws").mkdir()
+        task_store.set_active_workspace(ws["id"])
+
+        outside = tmp_path / "outside.txt"
+        task = Task(
+            id=uuid4(),
+            objective_id=uuid4(),
+            description="Escape attempt",
+            capability="filesystem",
+            tool_id="fs.write",
+            input_data={"path": str(outside), "content": "nope"},
+        )
+        result = await execute_tool("fs.write", task, {"path": str(outside), "content": "nope"}, task_store)
+        assert result.success is False
+        assert not outside.exists()
+
 
     @pytest.mark.asyncio
     async def test_cmd_exec(self, task_store, registered_tools):

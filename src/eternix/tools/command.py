@@ -4,9 +4,35 @@ import shlex
 from pathlib import Path
 from typing import Any
 
+from eternix.core.config import settings
 from eternix.core.models import Task, ToolDefinition, ToolResult, ToolSideEffect
 from eternix.core.task_store import TaskStore
+from eternix.tools.filesystem import WorkspaceEscape
 from eternix.tools.registry import tool_registry
+
+
+def _resolve_cwd(working_dir: str | None, task_store: TaskStore | None) -> Path:
+    """Resolve a command working directory confined to the active workspace.
+
+    Commands must never execute in an arbitrary host directory. When no
+    working directory is supplied the active workspace root is used; a
+    supplied directory is honored only if it is inside that root.
+    """
+    root = None
+    if task_store is not None:
+        root = task_store.get_active_workspace_path()
+    if root is None:
+        try:
+            root = Path(settings.default_workspace).resolve()
+        except (OSError, ValueError):
+            root = Path.cwd().resolve()
+    if not working_dir:
+        return root
+    candidate = Path(working_dir)
+    resolved = (candidate if candidate.is_absolute() else root / candidate).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise WorkspaceEscape(f"Working directory is outside the authorized workspace: {working_dir}")
+    return resolved
 
 
 async def cmd_exec_handler(input_data: dict[str, Any], task: Task, task_store: TaskStore) -> ToolResult:
@@ -25,7 +51,10 @@ async def cmd_exec_handler(input_data: dict[str, Any], task: Task, task_store: T
             error="No command specified",
         )
 
-    cwd = Path(working_dir).resolve() if working_dir else Path.cwd()
+    try:
+        cwd = _resolve_cwd(working_dir, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="cmd.exec", task_id=task.id, success=False, error=str(e))
     full_env = {**os.environ, **env}
 
     try:
@@ -98,7 +127,10 @@ async def cmd_bg_start_handler(input_data: dict[str, Any], task: Task, task_stor
             error="No command specified",
         )
 
-    cwd = Path(working_dir).resolve() if working_dir else Path.cwd()
+    try:
+        cwd = _resolve_cwd(working_dir, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="cmd.bg_start", task_id=task.id, success=False, error=str(e))
     full_env = {**os.environ, **env}
 
     try:

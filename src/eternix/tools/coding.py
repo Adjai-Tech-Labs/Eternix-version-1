@@ -1,6 +1,5 @@
 import asyncio
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +7,7 @@ from tree_sitter import Language, Parser
 
 from eternix.core.models import Task, ToolDefinition, ToolResult, ToolSideEffect
 from eternix.core.task_store import TaskStore
+from eternix.tools.filesystem import WorkspaceEscape, _resolve_path
 from eternix.tools.registry import tool_registry
 
 
@@ -120,13 +120,18 @@ async def coding_search_handler(input_data: dict[str, Any], task: Task, task_sto
         )
 
     try:
+        search_path = str(_resolve_path(path, task, task_store))
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="coding.search", task_id=task.id, success=False, error=str(e))
+
+    try:
         cmd = ["rg", "--json"]
         if language:
             cmd.extend(["-t", language])
         if pattern:
             cmd.extend(["-g", pattern])
         cmd.append(query)
-        cmd.append(path)
+        cmd.append(search_path)
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -187,7 +192,10 @@ async def coding_edit_handler(input_data: dict[str, Any], task: Task, task_store
         )
 
     try:
-        path = Path(file_path)
+        try:
+            path = _resolve_path(file_path, task, task_store)
+        except WorkspaceEscape as e:
+            return ToolResult(tool_id="coding.edit", task_id=task.id, success=False, error=str(e))
         if not path.exists():
             return ToolResult(
                 tool_id="coding.edit",
@@ -241,10 +249,13 @@ async def coding_lint_handler(input_data: dict[str, Any], task: Task, task_store
 
     try:
         if file_path:
-            targets = [file_path]
+            targets = [str(_resolve_path(file_path, task, task_store))]
         else:
-            targets = [path]
+            targets = [str(_resolve_path(path, task, task_store))]
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="coding.lint", task_id=task.id, success=False, error=str(e))
 
+    try:
         results = {}
         for target in targets:
             cmd = ["ruff", "check"]
@@ -286,18 +297,23 @@ async def coding_test_handler(input_data: dict[str, Any], task: Task, task_store
     args = input_data.get("args", [])
 
     try:
+        resolved_path = _resolve_path(path, task, task_store)
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="coding.test", task_id=task.id, success=False, error=str(e))
+
+    try:
         cmd = ["pytest", "-v"]
         if test_file:
-            cmd.append(test_file)
+            cmd.append(str(_resolve_path(test_file, task, task_store)))
         else:
-            cmd.append(path)
+            cmd.append(str(resolved_path))
         cmd.extend(args)
 
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd=path if os.path.isdir(path) else os.path.dirname(path),
+            cwd=str(resolved_path) if resolved_path.is_dir() else str(resolved_path.parent),
         )
         stdout, stderr = await proc.communicate()
 
@@ -326,7 +342,12 @@ async def coding_git_handler(input_data: dict[str, Any], task: Task, task_store:
     args = input_data.get("args", [])
 
     try:
-        cmd = ["git", "-C", repo_path, operation]
+        resolved_repo = str(_resolve_path(repo_path, task, task_store))
+    except WorkspaceEscape as e:
+        return ToolResult(tool_id="coding.git", task_id=task.id, success=False, error=str(e))
+
+    try:
+        cmd = ["git", "-C", resolved_repo, operation]
         cmd.extend(args)
 
         proc = await asyncio.create_subprocess_exec(
