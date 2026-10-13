@@ -1,0 +1,103 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eternix"
+version = "0.1.0"
+description = "An agent-first local AI system"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic",
+    "pydantic-settings",
+    "fastapi",
+    "uvicorn",
+    "httpx",
+    "sqlalchemy",
+    "alembic",
+    "psutil",
+    "rich",
+    "click",
+    "ddgs",
+    "trafilatura",
+    "python-docx",
+    "openpyxl",
+    "python-pptx",
+    "reportlab",
+    "pymupdf",
+    "pillow",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "sympy",
+    "tree-sitter",
+    "tree-sitter-python",
+    "tree-sitter-javascript",
+    "tree-sitter-typescript",
+    "tree-sitter-java",
+    "tree-sitter-cpp",
+    "tree-sitter-rust",
+    "tree-sitter-go",
+    "tree-sitter-c-sharp",
+    "tree-sitter-php",
+    "tree-sitter-dart",
+    "tree-sitter-kotlin",
+    "tree-sitter-sql",
+    "tree-sitter-html",
+    "tree-sitter-css",
+    "qdrant-client",
+    "fastembed",
+    "sentence-transformers",
+    "langchain-core",
+    "langgraph",
+    "mcp",
+    "apscheduler",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-exporter-otlp",
+    "faster-whisper",
+    "soundfile",
+    "sounddevice",
+    "pyautogui",
+]
+
+[project.optional-dependencies]
+core = []
+development = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+    "playwright",
+    "pdf2image",
+    "pytesseract",
+    "piper-tts",
+]
+
+[project.scripts]
+eternix = "eternix.cli.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["third_party"]
+
+[tool.ruff.lint]
+# Tool modules intentionally swallow exceptions to provide graceful
+# fallbacks (in-memory memory, empty search results, etc.).
+ignore = ["BLE001", "S110", "S102"]
+# FastAPI's dependency-injection idiom is a call in argument defaults.
+extend-ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests may import unused names for clarity.
+"tests/**" = ["F401", "F841"]
+# Vendored third-party code is not ours to fix.
+"third_party/**" = ["E", "F", "I", "UP", "C", "SIM", "PL", "RUF", "BLE", "S", "ASYNC", "T20", "TRY", "ANN", "D"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"

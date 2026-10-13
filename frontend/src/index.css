@@ -1,0 +1,154 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: #0c1e33;
+    --color-bg-elevated: #102a43;
+    --color-border: #1e3a5f;
+    --color-text: #e8edf2;
+    --color-text-muted: #829ab1;
+    --color-accent: #486581;
+    --color-accent-hover: #627d98;
+  }
+
+  *,
+  *::before,
+  *::after {
+    @apply border-eternix-800;
+    box-sizing: border-box;
+  }
+
+  html, body, #root {
+    @apply h-full w-full overflow-hidden;
+    height: 100%;
+    height: 100dvh;
+  }
+
+  body {
+    @apply bg-eternix-950 text-eternix-50 font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  ::selection {
+    @apply bg-eternix-600/50 text-white;
+  }
+
+  /* Scrollbar styles - Webkit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-eternix-950;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-eternix-700 rounded-full hover:bg-eternix-600;
+  }
+
+  ::-webkit-scrollbar-corner {
+    @apply bg-eternix-950;
+  }
+
+  /* Scrollbar styles - Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3d5a7a #0c1e33;
+  }
+
+  /* Focus visible for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-eternix-500 ring-offset-2 ring-offset-eternix-950;
+  }
+
+  /* Prevent text selection on UI elements */
+  button, [role="button"] {
+    user-select: none;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-eternix-500 focus-visible:ring-offset-2 focus-visible:ring-offset-eternix-950 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-eternix-600 text-white hover:bg-eternix-500 active:bg-eternix-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-eternix-800 text-eternix-100 hover:bg-eternix-700 active:bg-eternix-600 border border-eternix-700;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-eternix-300 hover:bg-eternix-800 active:bg-eternix-700;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600/20 text-red-400 hover:bg-red-600/30 active:bg-red-600/40 border border-red-600/30;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 bg-eternix-900 border border-eternix-700 rounded-lg text-eternix-100 placeholder-eternix-500 focus:outline-none focus:ring-2 focus:ring-eternix-500 focus:border-transparent transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-eternix-900/50 backdrop-blur-sm border border-eternix-800 rounded-xl;
+  }
+
+  .card-elevated {
+    @apply card bg-eternix-900 shadow-xl border-eternix-700;
+  }
+
+  .surface {
+    @apply bg-eternix-900/80 backdrop-blur-md border border-eternix-800 rounded-xl;
+  }
+
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-eternix-400 hover:text-eternix-100 hover:bg-eternix-800/50 transition-colors cursor-pointer;
+  }
+
+  .sidebar-item-active {
+    @apply sidebar-item bg-eternix-700/30 text-eternix-100;
+  }
+
+  .message-bubble {
+    @apply max-w-[85%] px-4 py-3 rounded-2xl animate-fade-in;
+  }
+
+  .message-user {
+    @apply message-bubble bg-eternix-700 text-eternix-50 self-end rounded-tr-sm;
+  }
+
+  .message-assistant {
+    @apply message-bubble bg-eternix-800/50 text-eternix-100 self-start rounded-tl-sm border border-eternix-700/50;
+  }
+
+  .code-block {
+    @apply bg-eternix-950 border border-eternix-700 rounded-lg p-4 overflow-x-auto text-sm font-mono;
+  }
+
+  .inline-code {
+    @apply bg-eternix-800 text-eternix-200 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: fadeIn 0.3s ease-out, slideUp 0.3s ease-out;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+}
