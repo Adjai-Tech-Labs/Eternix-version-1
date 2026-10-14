@@ -72,7 +72,12 @@ function Workspace() {
         await refreshCurrentConversation(conversationId)
         setLoading(false)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to send message')
+        const apiError = err as { status?: number; message?: string }
+        let message = err instanceof Error ? err.message : 'Failed to send message'
+        if (apiError.status === 408) {
+          message = 'Request timed out. The agent is still working - please check the conversation history or try again.'
+        }
+        setError(message)
         setLoading(false)
       }
     },

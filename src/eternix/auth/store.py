@@ -221,7 +221,9 @@ class AuditEventORM(Base):
     event_type = Column(String(80), nullable=False, index=True)
     outcome = Column(String(20), nullable=False, default="success")
     detail = Column(Text, default="")
-    metadata = Column(JSON, default=dict)
+    # Attribute is ``metadata_`` to avoid clashing with SQLAlchemy's reserved
+    # ``Base.metadata``; the physical column is still named ``metadata``.
+    metadata_ = Column("metadata", JSON, default=dict)
     created_at = Column(DateTime, nullable=False, default=_utcnow)
 
 
@@ -233,7 +235,7 @@ class EntitlementRecordORM(Base):
     entitlement = Column(String(40), default="paid")
     granted_at = Column(DateTime, nullable=False, default=_utcnow)
     source = Column(String(80), default="registration")
-    metadata = Column(JSON, default=dict)
+    metadata_ = Column("metadata", JSON, default=dict)
 
 
 def hash_token(token: str) -> str:
@@ -803,7 +805,7 @@ class AuthStore:
                 event_type=event_type,
                 outcome=outcome,
                 detail=detail,
-                metadata=record_metadata,
+                metadata_=record_metadata,
             )
             s.add(orm)
         return {"id": event_id, "event_type": event_type}
@@ -829,7 +831,7 @@ class AuthStore:
                 user_id=user_id,
                 entitlement=entitlement,
                 source=source,
-                metadata=metadata or {},
+                metadata_=metadata or {},
             )
             s.add(orm)
         return {"id": record_id}
@@ -1050,6 +1052,6 @@ class AuthStore:
             "event_type": orm.event_type,
             "outcome": orm.outcome,
             "detail": orm.detail,
-            "metadata": orm.metadata or {},
+            "metadata": orm.metadata_ or {},
             "created_at": _as_utc(orm.created_at),
         }

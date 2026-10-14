@@ -100,7 +100,7 @@ export class ApiError extends Error {
 async function request<T>(
   url: string,
   options: RequestInit = {},
-  { public: isPublic = false }: { public?: boolean } = {},
+  { public: isPublic = false, timeout }: { public?: boolean; timeout?: number } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -112,33 +112,56 @@ async function request<T>(
     if (token) headers['Authorization'] = `Bearer ${token}`
   }
 
-  let response = await fetch(`${API_BASE}${url}`, { ...options, headers })
+  const controller = new AbortController()
+  const timeoutId = timeout ? setTimeout(() => controller.abort(), timeout) : null
 
-  if (response.status === 401 && !isPublic) {
-    // One automatic refresh + retry before surfacing the error.
-    const refreshed = await ensureFreshToken()
-    if (refreshed) {
-      const token = getAccessToken()
-      if (token) headers['Authorization'] = `Bearer ${token}`
-      response = await fetch(`${API_BASE}${url}`, { ...options, headers })
+  try {
+    let response = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    })
+
+    if (timeoutId) clearTimeout(timeoutId)
+
+    if (response.status === 401 && !isPublic) {
+      const refreshed = await ensureFreshToken()
+      if (refreshed) {
+        const token = getAccessToken()
+        if (token) headers['Authorization'] = `Bearer ${token}`
+        const controller2 = new AbortController()
+        const timeoutId2 = timeout ? setTimeout(() => controller2.abort(), timeout) : null
+        response = await fetch(`${API_BASE}${url}`, {
+          ...options,
+          headers,
+          signal: controller2.signal,
+        })
+        if (timeoutId2) clearTimeout(timeoutId2)
+      }
     }
-  }
 
-  if (response.status === 401 && !isPublic) {
-    window.dispatchEvent(new CustomEvent('eternix:auth:expired'))
-    throw new ApiError(401, 'Session expired. Please sign in again.')
-  }
+    if (response.status === 401 && !isPublic) {
+      window.dispatchEvent(new CustomEvent('eternix:auth:expired'))
+      throw new ApiError(401, 'Session expired. Please sign in again.')
+    }
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => response.statusText)
-    throw new ApiError(response.status, error)
-  }
+    if (!response.ok) {
+      const error = await response.json().catch(() => response.statusText)
+      throw new ApiError(response.status, error)
+    }
 
-  if (response.status === 204) {
-    return undefined as T
-  }
+    if (response.status === 204) {
+      return undefined as T
+    }
 
-  return response.json()
+    return response.json()
+  } catch (err) {
+    if (timeoutId) clearTimeout(timeoutId)
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError(408, 'Request timeout')
+    }
+    throw err
+  }
 }
 
 const publicRequest = <T>(url: string, options?: RequestInit) =>
@@ -295,13 +318,13 @@ export const api = {
     request<ObjectiveSummary>('/objectives', {
       method: 'POST',
       body: JSON.stringify({ user_input: userInput }),
-    }),
+    }, { timeout: 30000 }),
 
   getObjective: (objectiveId: string) =>
     request<ObjectiveSummary>(`/objectives/${objectiveId}`),
 
   runObjective: (objectiveId: string) =>
-    request<ObjectiveRunResult>(`/objectives/${objectiveId}/run`, { method: 'POST' }),
+    request<ObjectiveRunResult>(`/objectives/${objectiveId}/run`, { method: 'POST' }, { timeout: 300000 }),
 
   stopObjective: (objectiveId: string) =>
     request<{ status: string }>(`/objectives/${objectiveId}/stop`, { method: 'POST' }),

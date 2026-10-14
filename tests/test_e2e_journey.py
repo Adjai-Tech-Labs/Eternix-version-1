@@ -196,7 +196,9 @@ def test_full_journey_and_real_tool_execution(live_server):
         assert r.status_code == 200, r.text
         objective_id = r.json()["id"]
 
-        r = client.post(f"{base}/api/objectives/{objective_id}/run", headers=headers)
+        # Running the objective performs real local inference for planning,
+        # which is slow on CPU-only hardware; allow a generous timeout.
+        r = client.post(f"{base}/api/objectives/{objective_id}/run", headers=headers, timeout=180.0)
         assert r.status_code == 200, r.text
         run = r.json()
         assert run["details"]["total"] >= 1

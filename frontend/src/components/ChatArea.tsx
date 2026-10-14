@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { cn } from '@/utils/helpers'
 import { ChatMessageComponent } from '@/components/ChatMessage'
 import { ChatInput } from '@/components/ChatInput'
-import { Terminal, Loader2, AlertCircle, ChevronDown, Sparkles } from 'lucide-react'
+import { Terminal, Loader2, AlertCircle, ChevronDown, Sparkles, FileText, Globe, Code, Image, Zap } from 'lucide-react'
 import type { ChatMessage as ChatMessageType } from '@/types'
 
 interface ChatAreaProps {
@@ -10,7 +10,10 @@ interface ChatAreaProps {
   loading: boolean
   error: string | null
   onSend: (content: string) => void
-  emptyMessage?: string
+  onStop?: () => void
+  isTaskRunning?: boolean
+  taskStatus?: string
+  taskProgress?: { completed: number; total: number }
   className?: string
 }
 
@@ -19,6 +22,10 @@ export const ChatArea = ({
   loading,
   error,
   onSend,
+  onStop,
+  isTaskRunning,
+  taskStatus,
+  taskProgress,
   className,
 }: ChatAreaProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -50,27 +57,43 @@ export const ChatArea = ({
     [onSend],
   )
 
+  const handleStop = useCallback(() => {
+    onStop?.()
+  }, [onStop])
+
   if (messages.length === 0 && !loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-0">
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-eternix-500 to-eternix-700 flex items-center justify-center mb-6 animate-fade-in">
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-eternix-purple-500 to-eternix-purple-700 flex items-center justify-center mb-6 animate-fade-in">
           <Terminal className="w-10 h-10 text-white" />
         </div>
-        <h1 className="text-3xl font-bold text-eternix-100 mb-2">Eternix</h1>
+        <h1 className="text-3xl font-bold text-eternix-100 mb-2">ETERNIX</h1>
         <p className="text-eternix-400 mb-8 max-w-md">
           Ask anything. The agent plans, picks its own tools, and answers.
         </p>
-        <div className="w-full max-w-xl space-y-3">
+        <div className="w-full max-w-xl space-y-3 mb-6">
           <div className="flex items-center gap-3 p-3 bg-eternix-900/50 rounded-lg text-left">
-            <Sparkles className="w-5 h-5 text-eternix-500 flex-shrink-0" />
+            <div className="w-8 h-8 rounded-lg bg-eternix-purple-500/20 flex items-center justify-center">
+              <Sparkles className="w-5 h-5 text-eternix-purple-400" />
+            </div>
             <p className="text-sm text-eternix-400">
               Describe a task in plain language — the agent handles the rest.
             </p>
           </div>
           <div className="flex items-center gap-3 p-3 bg-eternix-900/50 rounded-lg text-left">
-            <Sparkles className="w-5 h-5 text-eternix-500 flex-shrink-0" />
+            <div className="w-8 h-8 rounded-lg bg-eternix-gold-500/20 flex items-center justify-center">
+              <FolderOpen className="w-5 h-5 text-eternix-gold-400" />
+            </div>
             <p className="text-sm text-eternix-400">
               Register workspace folders in the sidebar to give the agent access to your files.
+            </p>
+          </div>
+          <div className="flex items-center gap-3 p-3 bg-eternix-900/50 rounded-lg text-left">
+            <div className="w-8 h-8 rounded-lg bg-eternix-lightBlue-500/20 flex items-center justify-center">
+              <Globe className="w-5 h-5 text-eternix-lightBlue-400" />
+            </div>
+            <p className="text-sm text-eternix-400">
+              Web search, code analysis, image generation, and more — all automatic.
             </p>
           </div>
         </div>
@@ -86,7 +109,7 @@ export const ChatArea = ({
       <div
         ref={scrollAreaRef}
         onScroll={handleScroll}
-        className="flex-1 min-h-0 overflow-y-auto"
+        className="flex-1 min-h-0 overflow-y-auto scrollbar-thin"
       >
         <div className="flex flex-col gap-4 p-4 pb-0">
           {messages.map((message, index) => (
@@ -96,7 +119,7 @@ export const ChatArea = ({
           {loading && (
             <div className="flex items-start gap-3 animate-fade-in">
               <div className="w-8 h-8 flex-shrink-0 mt-1">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-eternix-500 to-eternix-700 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-eternix-purple-500 to-eternix-purple-700 flex items-center justify-center">
                   <Loader2 className="w-4 h-4 text-white animate-spin" />
                 </div>
               </div>
@@ -104,11 +127,40 @@ export const ChatArea = ({
                 <div className="bg-eternix-800/50 border border-eternix-700/50 rounded-2xl rounded-tl-sm px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-eternix-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-eternix-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-eternix-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <span className="w-2 h-2 bg-eternix-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-eternix-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-eternix-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                     <span className="text-eternix-300">Thinking...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isTaskRunning && taskStatus && (
+            <div className="flex items-start gap-3 animate-fade-in">
+              <div className="w-8 h-8 flex-shrink-0 mt-1">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-eternix-gold-500 to-eternix-gold-600 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0 ml-3">
+                <div className="bg-eternix-gold-500/10 border border-eternix-gold-500/30 rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-2 h-2 bg-eternix-gold-500 rounded-full animate-pulse" />
+                    <span className="text-eternix-gold-300 font-medium">{taskStatus}</span>
+                  </div>
+                  {taskProgress && taskProgress.total > 0 && (
+                    <div className="w-full h-2 bg-eternix-800 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-eternix-gold-500 to-eternix-gold-400 rounded-full transition-all duration-300"
+                        style={{ width: `${(taskProgress.completed / taskProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-2 text-xs text-eternix-500">
+                    <span>{taskProgress?.completed ?? 0} / {taskProgress?.total ?? 0} steps</span>
                   </div>
                 </div>
               </div>
@@ -141,7 +193,7 @@ export const ChatArea = ({
       </div>
 
       {userScrolled && (
-        <div className="fixed bottom-24 right-4 z-10 animate-fade-in">
+        <div className="absolute bottom-24 right-4 z-10 animate-fade-in">
           <button
             onClick={() => {
               setUserScrolled(false)
@@ -156,7 +208,12 @@ export const ChatArea = ({
       )}
 
       <div className="border-t border-eternix-800 bg-eternix-950/50 backdrop-blur-sm">
-        <ChatInput onSubmit={handleSend} disabled={loading} />
+        <ChatInput 
+          onSubmit={handleSend} 
+          disabled={loading || isTaskRunning}
+          onStop={handleStop}
+          isRunning={isTaskRunning}
+        />
       </div>
     </div>
   )

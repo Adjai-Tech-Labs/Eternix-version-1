@@ -4,19 +4,98 @@
 
 @layer base {
   :root {
-    --color-bg: #0c1e33;
-    --color-bg-elevated: #102a43;
-    --color-border: #1e3a5f;
-    --color-text: #e8edf2;
-    --color-text-muted: #829ab1;
-    --color-accent: #486581;
-    --color-accent-hover: #627d98;
+    /* ETERNIX Design Tokens - Semantic Colors */
+    --color-background: #020617;           /* eternix-950 */
+    --color-surface: #0f172a;              /* eternix-900 */
+    --color-surface-elevated: #1e293b;     /* eternix-800 */
+    --color-border: #334155;               /* eternix-700 */
+    --color-border-subtle: #1e293b;        /* eternix-800 */
+    --color-text-primary: #f8fafc;         /* eternix-50 */
+    --color-text-secondary: #94a3b8;       /* eternix-400 */
+    --color-text-muted: #64748b;           /* eternix-500 */
+    --color-accent-purple: #7c4dff;        /* eternix-purple-500 */
+    --color-accent-purple-hover: #9a7bff;  /* eternix-purple-400 */
+    --color-accent-gold: #fbbf24;          /* eternix-gold-400 */
+    --color-accent-gold-hover: #fcd34d;    /* eternix-gold-300 */
+    --color-accent-lightblue: #38bdf8;     /* eternix-lightBlue-400 */
+    --color-accent-lightblue-hover: #7dd3fc; /* eternix-lightBlue-300 */
+    --color-focus: #7c4dff;                /* eternix-purple-500 */
+    --color-success: #22c55e;              /* green-500 */
+    --color-warning: #fbbf24;              /* eternix-gold-400 */
+    --color-error: #ef4444;                /* red-500 */
+    --color-disabled: #475569;             /* eternix-600 */
+
+    /* Typography */
+    --font-family-sans: 'Inter', system-ui, sans-serif;
+    --font-family-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-size-xs: 0.75rem;    /* 12px */
+    --font-size-sm: 0.875rem;   /* 14px */
+    --font-size-base: 1rem;     /* 16px */
+    --font-size-lg: 1.125rem;   /* 18px */
+    --font-size-xl: 1.25rem;    /* 20px */
+    --font-size-2xl: 1.5rem;    /* 24px */
+    --font-size-3xl: 1.875rem;  /* 30px */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --line-height-tight: 1.25;
+    --line-height-normal: 1.5;
+    --line-height-relaxed: 1.75;
+
+    /* Spacing Scale */
+    --spacing-0: 0;
+    --spacing-1: 0.25rem;   /* 4px */
+    --spacing-2: 0.5rem;    /* 8px */
+    --spacing-3: 0.75rem;   /* 12px */
+    --spacing-4: 1rem;      /* 16px */
+    --spacing-5: 1.25rem;   /* 20px */
+    --spacing-6: 1.5rem;    /* 24px */
+    --spacing-8: 2rem;      /* 32px */
+    --spacing-10: 2.5rem;   /* 40px */
+    --spacing-12: 3rem;     /* 48px */
+    --spacing-16: 4rem;     /* 64px */
+
+    /* Border Radius */
+    --radius-sm: 0.25rem;   /* 4px */
+    --radius-md: 0.375rem;  /* 6px */
+    --radius-lg: 0.5rem;    /* 8px */
+    --radius-xl: 0.75rem;   /* 12px */
+    --radius-2xl: 1rem;     /* 16px */
+    --radius-full: 9999px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* Z-Index Scale */
+    --z-dropdown: 100;
+    --z-sticky: 200;
+    --z-fixed: 300;
+    --z-modal-backdrop: 400;
+    --z-modal: 500;
+    --z-popover: 600;
+    --z-tooltip: 700;
+
+    /* Layout */
+    --layout-header-height: 4rem;      /* 64px */
+    --layout-sidebar-width: 18rem;     /* 288px */
+    --layout-sidebar-collapsed: 4rem;  /* 64px */
+    --layout-composer-max-width: 48rem; /* 768px */
+
+    /* Motion */
+    --motion-duration-fast: 150ms;
+    --motion-duration-normal: 250ms;
+    --motion-duration-slow: 350ms;
+    --motion-easing: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   *,
   *::before,
   *::after {
-    @apply border-eternix-800;
+    @apply border-eternix-700;
     box-sizing: border-box;
   }
 
@@ -36,12 +115,13 @@
   }
 
   ::selection {
-    @apply bg-eternix-600/50 text-white;
+    @apply bg-eternix-purple-500/30 text-white;
   }
 
   /* Scrollbar styles - Webkit (Chrome, Safari, Edge) */
   ::-webkit-scrollbar {
-    @apply w-2 h-2;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -50,6 +130,11 @@
 
   ::-webkit-scrollbar-thumb {
     @apply bg-eternix-700 rounded-full hover:bg-eternix-600;
+    border: 2px solid #020617; /* Creates padding effect */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-eternix-600;
   }
 
   ::-webkit-scrollbar-corner {
@@ -59,27 +144,39 @@
   /* Scrollbar styles - Firefox */
   * {
     scrollbar-width: thin;
-    scrollbar-color: #3d5a7a #0c1e33;
+    scrollbar-color: #334155 #020617;
   }
 
   /* Focus visible for accessibility */
   :focus-visible {
-    @apply outline-none ring-2 ring-eternix-500 ring-offset-2 ring-offset-eternix-950;
+    @apply outline-none ring-2 ring-eternix-purple-500 ring-offset-2 ring-offset-eternix-950;
   }
 
   /* Prevent text selection on UI elements */
   button, [role="button"] {
     user-select: none;
   }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-eternix-500 focus-visible:ring-offset-2 focus-visible:ring-offset-eternix-950 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-eternix-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-eternix-950 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-eternix-600 text-white hover:bg-eternix-500 active:bg-eternix-700;
+    @apply btn bg-eternix-purple-600 text-white hover:bg-eternix-purple-500 active:bg-eternix-purple-700;
   }
 
   .btn-secondary {
@@ -94,8 +191,12 @@
     @apply btn bg-red-600/20 text-red-400 hover:bg-red-600/30 active:bg-red-600/40 border border-red-600/30;
   }
 
+  .btn-gold {
+    @apply btn bg-eternix-gold-500 text-eternix-950 hover:bg-eternix-gold-400 active:bg-eternix-gold-600 font-semibold;
+  }
+
   .input {
-    @apply w-full px-4 py-2.5 bg-eternix-900 border border-eternix-700 rounded-lg text-eternix-100 placeholder-eternix-500 focus:outline-none focus:ring-2 focus:ring-eternix-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-2.5 bg-eternix-900 border border-eternix-700 rounded-lg text-eternix-100 placeholder-eternix-500 focus:outline-none focus:ring-2 focus:ring-eternix-purple-500 focus:border-transparent transition-all duration-200;
   }
 
   .card {
@@ -123,11 +224,11 @@
   }
 
   .message-user {
-    @apply message-bubble bg-eternix-700 text-eternix-50 self-end rounded-tr-sm;
+    @apply message-bubble bg-eternix-purple-600/30 text-eternix-100 self-end rounded-tr-sm border border-eternix-purple-500/20;
   }
 
   .message-assistant {
-    @apply message-bubble bg-eternix-800/50 text-eternix-100 self-start rounded-tl-sm border border-eternix-700/50;
+    @apply message-bubble bg-eternix-900/50 text-eternix-100 self-start rounded-tl-sm border border-eternix-700/50;
   }
 
   .code-block {
@@ -135,8 +236,28 @@
   }
 
   .inline-code {
-    @apply bg-eternix-800 text-eternix-200 px-1.5 py-0.5 rounded text-sm font-mono;
+    @apply bg-eternix-800 text-eternix-gold-300 px-1.5 py-0.5 rounded text-sm font-mono;
   }
+
+  .attachment-chip {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 bg-eternix-800/50 border border-eternix-700 rounded-lg text-sm text-eternix-300;
+  }
+
+  .attachment-chip-remove {
+    @apply p-0.5 rounded hover:bg-eternix-700 text-eternix-400 hover:text-eternix-200 transition-colors;
+  }
+
+  .task-status-badge {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .task-status-queued { @apply task-status-badge bg-eternix-800 text-eternix-400; }
+  .task-status-running { @apply task-status-badge bg-eternix-purple-500/20 text-eternix-purple-300; }
+  .task-status-waiting { @apply task-status-badge bg-eternix-gold-500/20 text-eternix-gold-300; }
+  .task-status-completed { @apply task-status-badge bg-green-500/20 text-green-300; }
+  .task-status-failed { @apply task-status-badge bg-red-500/20 text-red-300; }
+  .task-status-cancelling { @apply task-status-badge bg-orange-500/20 text-orange-300; }
+  .task-status-cancelled { @apply task-status-badge bg-eternix-600 text-eternix-400; }
 }
 
 @layer utilities {
@@ -150,5 +271,28 @@
 
   .glass {
     @apply bg-white/5 backdrop-blur-md border border-white/10;
+  }
+
+  /* Custom scrollbar for specific elements */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #020617;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-eternix-700 rounded-full hover:bg-eternix-600;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-corner {
+    @apply bg-transparent;
   }
 }

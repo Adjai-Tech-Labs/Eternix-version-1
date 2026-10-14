@@ -44,7 +44,7 @@ _Generated during forensic audit. Environment: Fedora, Python 3.14.8, 8 CPU / ~8
 | Check | Command | Result |
 |---|---|---|
 | Unit tests | `pytest tests/test_core.py tests/test_email_verification.py` | **57 passed** (incl. new DEF-005 regression) |
-| E2E journey (live server, isolated DB) | `pytest tests/test_e2e_journey.py` | **8 passed** — auth gate (401/403), full onboarding, real tool exec, sandbox-escape blocked, conversation persistence |
+| E2E journey (live server, isolated DB) | `pytest tests/test_e2e_journey.py` | **8 passed** — auth gate (401/403), full onboarding, real tool exec, sandbox-escape blocked, conversation persistence, and a real LLM-planned objective (loads the local coding model, plans, executes `fs.list`, completes) |
 | Lint | `ruff check src/eternix/tools/ ... tests/` | **All checks passed** |
 | llama.cpp build | `cmake --build build -j2` | **Built** (llama-cli, llama-server, llama-mtmd-cli, exit 0) |
 | Real inference | `llama-cli -m qwen2.5-1.5b ... "Reply PONG"` | **"PONG"** @ 8.6 t/s generation |

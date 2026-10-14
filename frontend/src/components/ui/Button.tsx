@@ -2,20 +2,21 @@ import { forwardRef } from 'react'
 import { cn } from '@/utils/helpers'
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'gold'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, disabled, children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-eternix-500 focus-visible:ring-offset-2 focus-visible:ring-offset-eternix-950 disabled:opacity-50 disabled:cursor-not-allowed'
+    const baseStyles = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-eternix-purple-500 focus-visible:ring-offset-2 focus-visible:ring-offset-eternix-950 disabled:opacity-50 disabled:cursor-not-allowed'
     
     const variants = {
-      primary: 'bg-eternix-600 text-white hover:bg-eternix-500 active:bg-eternix-700',
+      primary: 'bg-eternix-purple-600 text-white hover:bg-eternix-purple-500 active:bg-eternix-purple-700',
       secondary: 'bg-eternix-800 text-eternix-100 hover:bg-eternix-700 active:bg-eternix-600 border border-eternix-700',
       ghost: 'bg-transparent text-eternix-300 hover:bg-eternix-800 active:bg-eternix-700',
       danger: 'bg-red-600/20 text-red-400 hover:bg-red-600/30 active:bg-red-600/40 border border-red-600/30',
+      gold: 'bg-eternix-gold-500 text-eternix-950 hover:bg-eternix-gold-400 active:bg-eternix-gold-600 font-semibold',
     }
 
     const sizes = {
